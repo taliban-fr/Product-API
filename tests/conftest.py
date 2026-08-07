@@ -26,3 +26,13 @@ def client_fixture(session: Session):
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
+
+@pytest.fixture
+def test_user():
+ """Create a test user for authentication tests."""
+ return {
+ "username": "testuser",
+ "email": "test@example.com",
+ "password": "testpass123",
+ "full_name": "Test User"
+ }

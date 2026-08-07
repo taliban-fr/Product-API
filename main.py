@@ -5,6 +5,9 @@ from datetime import datetime
 
 from database.session import get_session, create_db_and_tables
 from models.product import Product, ProductCreate, ProductUpdate, Category, CategoryCreate
+from models.user import User, UserCreate, UserRead
+from auth import hash_password, verify_password, create_access_token, get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
 app = FastAPI(title="Product Catalog API", version="1.0.0")
 
@@ -13,6 +16,44 @@ app = FastAPI(title="Product Catalog API", version="1.0.0")
 def on_startup():
     create_db_and_tables()
 
+# ============================================================
+# AUTH
+# ============================================================
+
+@app.post("/register", response_model=UserRead, status_code=201)
+def register(user: UserCreate, session: Session = Depends(get_session)):
+    """Register a new user"""
+    existing = session.exec(select(User).where(User.username == user.username)).first()
+    if existing:
+        raise HTTPException(409, "Username already exists")
+
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hash_password(user.password),
+        full_name=user.full_name,
+    )
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user
+
+
+@app.post("/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
+    """Log in and receive a JWT access token"""
+    user = session.exec(select(User).where(User.username == form_data.username)).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # ============================================================
 # CATEGORY CRUD
