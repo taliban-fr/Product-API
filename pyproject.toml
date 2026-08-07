@@ -13,3 +13,10 @@ dependencies = [
     "sqlmodel>=0.0.39",
     "uvicorn>=0.51.0",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
