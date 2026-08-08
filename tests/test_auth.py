@@ -1,10 +1,13 @@
 def test_register_user(client):
-    response = client.post("/register", json={
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "testpass123",
-        "full_name": "Test User"
-    })
+    response = client.post(
+        "/register",
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpass123",
+            "full_name": "Test User",
+        },
+    )
     assert response.status_code == 201
     data = response.json()
     assert data["username"] == "testuser"
@@ -16,7 +19,7 @@ def test_register_duplicate_username(client):
     user_data = {
         "username": "testuser",
         "email": "test@example.com",
-        "password": "testpass123"
+        "password": "testpass123",
     }
     client.post("/register", json=user_data)
 
@@ -27,16 +30,18 @@ def test_register_duplicate_username(client):
 
 
 def test_login_success(client):
-    client.post("/register", json={
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "testpass123"
-    })
+    client.post(
+        "/register",
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpass123",
+        },
+    )
 
-    response = client.post("/login", data={
-        "username": "testuser",
-        "password": "testpass123"
-    })
+    response = client.post(
+        "/login", data={"username": "testuser", "password": "testpass123"}
+    )
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
@@ -44,14 +49,16 @@ def test_login_success(client):
 
 
 def test_login_wrong_password(client):
-    client.post("/register", json={
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "testpass123"
-    })
+    client.post(
+        "/register",
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpass123",
+        },
+    )
 
-    response = client.post("/login", data={
-        "username": "testuser",
-        "password": "wrongpassword"
-    })
+    response = client.post(
+        "/login", data={"username": "testuser", "password": "wrongpassword"}
+    )
     assert response.status_code == 401

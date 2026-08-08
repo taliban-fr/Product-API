@@ -1,19 +1,19 @@
-from sqlmodel import SQLModel, Field, Relationship
-from pydantic import field_validator
-from datetime import datetime
-from typing import Optional, List
 import re
+from datetime import datetime
+
+from pydantic import field_validator
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class Category(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True, min_length=2, max_length=50)
-    description: Optional[str] = Field(default=None, max_length=200)
-    products: List["Product"] = Relationship(back_populates="category")
+    description: str | None = Field(default=None, max_length=200)
+    products: list[Product] = Relationship(back_populates="category")
 
 
 class Product(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, min_length=2, max_length=100)
     description: str = Field(min_length=10, max_length=500)
     price: float = Field(gt=0)
@@ -21,8 +21,8 @@ class Product(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    category_id: Optional[int] = Field(default=None, foreign_key="category.id")
-    category: Optional[Category] = Relationship(back_populates="products")
+    category_id: int | None = Field(default=None, foreign_key="category.id")
+    category: Category | None = Relationship(back_populates="products")
 
 
 class ProductCreate(SQLModel):
@@ -30,21 +30,43 @@ class ProductCreate(SQLModel):
     description: str = Field(min_length=10, max_length=500)
     price: float = Field(gt=0)
     stock: int = Field(ge=0, default=0)
-    category_id: Optional[int] = None
+    category_id: int | None = None
 
     @field_validator("name")
     def validate_name(cls, v):
         if not v[0].isupper():
             raise ValueError("Name must start with a capital letter")
-        if not re.match(r'^[A-Za-z0-9\s\-]+$', v):
+        if not re.match(r"^[A-Za-z0-9\s\-]+$", v):
             raise ValueError("Name cannot contain special characters")
         if len(v.strip().split()) < 1:
             raise ValueError("Name must contain at least one word")
         return v
 
-ALLOWED_BRANDS = ["HP", "Dell", "Lenovo", "Apple", "Samsung", "Intel", "AMD", "Corsair", "Logitech", "Other"]
 
-ALLOWED_CATEGORIES = ["Laptops", "Monitors", "Storage", "Processors", "Memory", "Keyboards", "Mice", "Accessories"]
+ALLOWED_BRANDS = [
+    "HP",
+    "Dell",
+    "Lenovo",
+    "Apple",
+    "Samsung",
+    "Intel",
+    "AMD",
+    "Corsair",
+    "Logitech",
+    "Other",
+]
+
+ALLOWED_CATEGORIES = [
+    "Laptops",
+    "Monitors",
+    "Storage",
+    "Processors",
+    "Memory",
+    "Keyboards",
+    "Mice",
+    "Accessories",
+]
+
 
 @field_validator("brand")
 def validate_brand(cls, v):
@@ -56,12 +78,12 @@ def validate_brand(cls, v):
 
 
 class ProductUpdate(SQLModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
-    description: Optional[str] = Field(None, min_length=10, max_length=500)
-    price: Optional[float] = Field(None, gt=0)
-    stock: Optional[int] = Field(None, ge=0)
+    name: str | None = Field(None, min_length=2, max_length=100)
+    description: str | None = Field(None, min_length=10, max_length=500)
+    price: float | None = Field(None, gt=0)
+    stock: int | None = Field(None, ge=0)
 
 
 class CategoryCreate(SQLModel):
     name: str = Field(min_length=2, max_length=50)
-    description: Optional[str] = Field(None, max_length=200)
+    description: str | None = Field(None, max_length=200)

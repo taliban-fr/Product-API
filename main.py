@@ -1,20 +1,25 @@
-from fastapi import FastAPI, HTTPException, Depends
-from sqlmodel import Session, select
-from typing import List, Optional
-from datetime import datetime
-
-from database.session import get_session, create_db_and_tables
-from models.product import Product, ProductCreate, ProductUpdate, Category, CategoryCreate
-from models.user import User, UserCreate, UserRead
-from auth import hash_password, verify_password, create_access_token, get_current_user
-from fastapi.security import OAuth2PasswordRequestForm
-import time
-import platform
-import psutil
 import logging
-from logging.handlers import RotatingFileHandler
 import os
-from fastapi import Request
+import platform
+import time
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
+import psutil
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session, select
+
+from auth import create_access_token, get_current_user, hash_password, verify_password
+from database.session import create_db_and_tables, get_session
+from models.product import (
+    Category,
+    CategoryCreate,
+    Product,
+    ProductCreate,
+    ProductUpdate,
+)
+from models.user import User, UserCreate, UserRead
 
 LOG_FILE = os.getenv("LOG_FILE", "app.log")
 logging.basicConfig(
@@ -22,12 +27,13 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         RotatingFileHandler(LOG_FILE, maxBytes=10485760, backupCount=5),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Product Catalog API", version="1.0.0")
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -41,6 +47,7 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
+
 start_time = time.time()
 
 
@@ -48,9 +55,11 @@ start_time = time.time()
 def on_startup():
     create_db_and_tables()
 
+
 # ============================================================
 # AUTH
 # ============================================================
+
 
 @app.post("/register", response_model=UserRead, status_code=201)
 def register(user: UserCreate, session: Session = Depends(get_session)):
@@ -87,9 +96,11 @@ def login(
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 # ============================================================
 # MONITORING
 # ============================================================
+
 
 @app.get("/health")
 def health_check():
@@ -101,8 +112,8 @@ def health_check():
         "uptime_seconds": time.time() - start_time,
         "system": {
             "platform": platform.platform(),
-            "python": platform.python_version()
-        }
+            "python": platform.python_version(),
+        },
     }
 
 
@@ -112,17 +123,21 @@ def get_metrics(current_user: User = Depends(get_current_user)):
     return {
         "cpu_percent": psutil.cpu_percent(),
         "memory_percent": psutil.virtual_memory().percent,
-        "disk_usage_percent": psutil.disk_usage('/').percent
+        "disk_usage_percent": psutil.disk_usage("/").percent,
     }
+
 
 # ============================================================
 # CATEGORY CRUD
 # ============================================================
 
+
 @app.post("/categories", response_model=Category, status_code=201)
 def create_category(category: CategoryCreate, session: Session = Depends(get_session)):
     """Create a new category"""
-    existing = session.exec(select(Category).where(Category.name == category.name)).first()
+    existing = session.exec(
+        select(Category).where(Category.name == category.name)
+    ).first()
     if existing:
         raise HTTPException(400, "Category already exists")
 
@@ -133,7 +148,7 @@ def create_category(category: CategoryCreate, session: Session = Depends(get_ses
     return db_category
 
 
-@app.get("/categories", response_model=List[Category])
+@app.get("/categories", response_model=list[Category])
 def list_categories(session: Session = Depends(get_session)):
     """List all categories"""
     return session.exec(select(Category)).all()
@@ -142,6 +157,7 @@ def list_categories(session: Session = Depends(get_session)):
 # ============================================================
 # PRODUCT CRUD
 # ============================================================
+
 
 @app.post("/products", response_model=Product, status_code=201)
 def create_product(product: ProductCreate, session: Session = Depends(get_session)):
@@ -158,15 +174,15 @@ def create_product(product: ProductCreate, session: Session = Depends(get_sessio
     return db_product
 
 
-@app.get("/products", response_model=List[Product])
+@app.get("/products", response_model=list[Product])
 def list_products(
     skip: int = 0,
     limit: int = 10,
-    category_id: Optional[int] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
-    in_stock: Optional[bool] = None,
-    session: Session = Depends(get_session)
+    category_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    in_stock: bool | None = None,
+    session: Session = Depends(get_session),
 ):
     """List products with filters"""
     query = select(Product)
@@ -186,7 +202,7 @@ def list_products(
     return session.exec(query.offset(skip).limit(limit)).all()
 
 
-@app.get("/products/search", response_model=List[Product])
+@app.get("/products/search", response_model=list[Product])
 def search_products(q: str, session: Session = Depends(get_session)):
     """Search products by name or description"""
     query = select(Product).where(
@@ -208,7 +224,7 @@ def get_product(product_id: int, session: Session = Depends(get_session)):
 def update_product(
     product_id: int,
     product_update: ProductUpdate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
     """Partially update a product"""
     product = session.get(Product, product_id)
@@ -233,4 +249,3 @@ def delete_product(product_id: int, session: Session = Depends(get_session)):
 
     session.delete(product)
     session.commit()
-    return None

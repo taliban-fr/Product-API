@@ -2,8 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
-from main import app
 from database.session import get_session
+from main import app
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
 
@@ -27,12 +27,13 @@ def client_fixture(session: Session):
     yield client
     app.dependency_overrides.clear()
 
+
 @pytest.fixture
 def test_user():
- """Create a test user for authentication tests."""
- return {
- "username": "testuser",
- "email": "test@example.com",
- "password": "testpass123",
- "full_name": "Test User"
- }
+    """Create a test user for authentication tests."""
+    return {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "testpass123",
+        "full_name": "Test User",
+    }

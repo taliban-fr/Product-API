@@ -17,7 +17,7 @@ def test_validation_error_empty_name(client):
         "name": "",
         "description": "A valid description here",
         "price": 99.99,
-        "stock": 10
+        "stock": 10,
     }
     response = client.post("/products", json=product_data)
     assert response.status_code == 422
@@ -29,7 +29,7 @@ def test_validation_error_negative_price(client):
         "name": "Valid Name",
         "description": "A valid description here",
         "price": -10,
-        "stock": 10
+        "stock": 10,
     }
     response = client.post("/products", json=product_data)
     assert response.status_code in [400, 422]

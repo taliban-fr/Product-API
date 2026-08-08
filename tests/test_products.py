@@ -23,7 +23,7 @@ def test_create_product(client):
         "name": "Wireless Mouse",
         "description": "A basic wireless mouse",
         "price": 19.99,
-        "stock": 50
+        "stock": 50,
     }
     response = client.post("/products", json=product_data)
     assert response.status_code == 201
@@ -33,7 +33,12 @@ def test_create_product(client):
 
 
 def test_get_product(client):
-    product_data = {"name": "Keyboard", "description": "Mechanical", "price": 49.99, "stock": 20}
+    product_data = {
+        "name": "Keyboard",
+        "description": "Mechanical",
+        "price": 49.99,
+        "stock": 20,
+    }
     create_response = client.post("/products", json=product_data)
     product_id = create_response.json()["id"]
 
@@ -48,7 +53,12 @@ def test_get_product_not_found(client):
 
 
 def test_update_product(client):
-    product_data = {"name": "Monitor", "description": "24 inch full HD display", "price": 150.0, "stock": 5}
+    product_data = {
+        "name": "Monitor",
+        "description": "24 inch full HD display",
+        "price": 150.0,
+        "stock": 5,
+    }
     create_response = client.post("/products", json=product_data)
     product_id = create_response.json()["id"]
 
@@ -58,7 +68,12 @@ def test_update_product(client):
 
 
 def test_delete_product(client):
-    product_data = {"name": "USB Cable", "description": "1 meter USB-C cable", "price": 5.99, "stock": 100}
+    product_data = {
+        "name": "USB Cable",
+        "description": "1 meter USB-C cable",
+        "price": 5.99,
+        "stock": 100,
+    }
     create_response = client.post("/products", json=product_data)
     product_id = create_response.json()["id"]
 
