@@ -8,8 +8,40 @@ from models.product import Product, ProductCreate, ProductUpdate, Category, Cate
 from models.user import User, UserCreate, UserRead
 from auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+import time
+import platform
+import psutil
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+from fastapi import Request
+
+LOG_FILE = os.getenv("LOG_FILE", "app.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        RotatingFileHandler(LOG_FILE, maxBytes=10485760, backupCount=5),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Product Catalog API", version="1.0.0")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_start = time.time()
+    response = await call_next(request)
+    process_time = time.time() - request_start
+    logger.info(
+        f"{request.method} {request.url.path} - "
+        f"Status: {response.status_code} - "
+        f"Time: {process_time:.3f}s"
+    )
+    return response
+
+start_time = time.time()
 
 
 @app.on_event("startup")
@@ -54,6 +86,34 @@ def login(
         )
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+# ============================================================
+# MONITORING
+# ============================================================
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for monitoring."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0",
+        "uptime_seconds": time.time() - start_time,
+        "system": {
+            "platform": platform.platform(),
+            "python": platform.python_version()
+        }
+    }
+
+
+@app.get("/metrics")
+def get_metrics(current_user: User = Depends(get_current_user)):
+    """Metrics endpoint for monitoring (requires authentication)."""
+    return {
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_percent": psutil.virtual_memory().percent,
+        "disk_usage_percent": psutil.disk_usage('/').percent
+    }
 
 # ============================================================
 # CATEGORY CRUD
